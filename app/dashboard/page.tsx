@@ -29,9 +29,8 @@ export default function Dashboard() {
     { key: 'neighborhood', label: 'Neighborhood', color: '#7AB87A' },
   ];
 
-  function buildPrompt() {
-    return `You are a top real estate copywriter. Generate all 7 content pieces for this listing. Use EXACTLY these section headers. No preamble.
-
+function buildPrompt() {
+    return `You are a top real estate copywriter with expert vision analysis skills. If photos are provided, study each one carefully and extract ONLY specific details you can actually see — exact materials, colors, brands, styles. Never invent details. Never use vague terms like "stunning" or "modern" unless specifically visible. Generate all 7 content pieces for this listing. Use EXACTLY these section headers. No preamble.
 PROPERTY: ${address} | ${beds}bd/${baths}ba | ${sqft} sqft | ${price} | Features: ${features} | Open house: ${openhouse || 'TBD'} | Tone: ${tone}
 
 MLS_DESCRIPTION:
