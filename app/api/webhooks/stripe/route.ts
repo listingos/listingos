@@ -1,12 +1,6 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 const PLAN_CONFIG: Record<string, { listings_limit: number; photo_limit: number }> = {
   solo:  { listings_limit: 5,  photo_limit: 5  },
   pro:   { listings_limit: 20, photo_limit: 15 },
@@ -14,12 +8,18 @@ const PLAN_CONFIG: Record<string, { listings_limit: number; photo_limit: number 
 };
 
 const PRICE_TO_PLAN: Record<string, string> = {
-  'price_1TGkwmCxBEAWBS3AlReeP9qs': 'solo',
-  'price_1TGkwlCxBEAWBS3ApNP6oh2e': 'pro',
-  'price_1TGkwnCxBEAWBS3AYxT5dl5X': 'team',
+  'price_1THPLLCxBEAWBS3AFBI3ViKW': 'solo',
+  'price_1THPLjCxBEAWBS3Afz30NbnS': 'pro',
+  'price_1THPLuCxBEAWBS3AKEh16Ecn': 'team',
 };
 
 export async function POST(req: Request) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   const body = await req.text();
   const sig  = req.headers.get('stripe-signature')!;
 
