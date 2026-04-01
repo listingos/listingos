@@ -152,7 +152,10 @@ setOutput(cleaned);
         <div style={{ fontFamily: 'Georgia, serif', fontSize: '20px', fontWeight: '700' }}>
           Listing<span style={{ color: '#C49535' }}>OS</span>
         </div>
-        <UserButton />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+  <a href="/pricing" style={{ fontSize: '13px', color: '#141210', textDecoration: 'none', padding: '7px 16px', border: '1px solid #DDD6C8', borderRadius: '8px', background: 'white' }}>Upgrade plan</a>
+  <UserButton />
+</div>
       </nav>
 
       <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', minHeight: 'calc(100vh - 58px)' }}>
