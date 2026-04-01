@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       listings_limit: cfg.listings_limit,
       photo_limit: cfg.photo_limit,
       usage_count: 0,
-    }, { onConflict: 'email' });
+    }, { onConflict: 'clerk_user_id' });
   }
 
   if (event.type === 'customer.subscription.deleted') {
