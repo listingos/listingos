@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [output, setOutput] = useState<Record<string, string>>({});
   const [activeTab, setActiveTab] = useState('mls');
   const [generated, setGenerated] = useState(false);
+  const [photos, setPhotos] = useState<File[]>([]);
 
   const tones = ['Luxury', 'Warm', 'Bold', 'Professional'];
   const tabs = [
@@ -97,13 +98,17 @@ NEIGHBORHOOD:
     if (!address) { alert('Please enter a property address'); return; }
     setLoading(true);
     setGenerated(false);
-    let fullText = '';
 
     try {
+      const formData = new FormData();
+      formData.append('prompt', buildPrompt());
+      photos.forEach((photo, i) => {
+        formData.append('photos', photo, `photo-${i}.jpg`);
+      });
+
       const response = await fetch('/api/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: buildPrompt() }),
+        body: formData,
       });
 
       if (response.status === 403) {
@@ -120,22 +125,20 @@ NEIGHBORHOOD:
         }
       }
 
- const data = await response.json();
-fullText = data.text;
+      const data = await response.json();
+      let fullText = data.text || '';
+      const parsed = parseOutput(fullText);
+      const cleaned: Record<string, string> = {};
+      Object.keys(parsed).forEach(key => {
+        cleaned[key] = parsed[key].replace(/\*\*/g, '').trim();
+      });
+      setOutput(cleaned);
+      setGenerated(true);
+      setActiveTab('mls');
     } catch(err) {
       alert('Something went wrong. Please try again.');
-      setLoading(false);
-      return;
     }
-console.log('FULL TEXT:', fullText);
-const parsed = parseOutput(fullText);
-const cleaned: Record<string, string> = {};
-Object.keys(parsed).forEach(key => {
-  cleaned[key] = parsed[key].replace(/\*\*/g, '').trim();
-});
-setOutput(cleaned);
-    setGenerated(true);
-    setActiveTab('mls');
+
     setLoading(false);
   }
 
@@ -146,31 +149,25 @@ setOutput(cleaned);
 
   return (
     <div style={{ fontFamily: 'sans-serif', background: '#F8F4EE', minHeight: '100vh' }}>
-
-      {/* NAV */}
       <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', height: '58px', background: 'white', borderBottom: '1px solid #DDD6C8', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ fontFamily: 'Georgia, serif', fontSize: '20px', fontWeight: '700' }}>
           Listing<span style={{ color: '#C49535' }}>OS</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-  <a href="/pricing" style={{ fontSize: '13px', color: '#141210', textDecoration: 'none', padding: '7px 16px', border: '1px solid #DDD6C8', borderRadius: '8px', background: 'white' }}>Upgrade plan</a>
-  <UserButton />
-</div>
+          <a href="/pricing" style={{ fontSize: '13px', color: '#141210', textDecoration: 'none', padding: '7px 16px', border: '1px solid #DDD6C8', borderRadius: '8px', background: 'white' }}>Upgrade plan</a>
+          <UserButton />
+        </div>
       </nav>
 
       <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', minHeight: 'calc(100vh - 58px)' }}>
-
-        {/* LEFT PANEL */}
         <div style={{ background: 'white', borderRight: '1px solid #DDD6C8', padding: '24px', overflowY: 'auto' }}>
           <div style={{ fontSize: '16px', fontWeight: '600', fontFamily: 'Georgia, serif', marginBottom: '20px' }}>New listing</div>
 
-          {/* ADDRESS */}
           <div style={{ marginBottom: '12px' }}>
             <label style={{ display: 'block', fontSize: '10px', fontWeight: '600', letterSpacing: '0.07em', textTransform: 'uppercase', color: '#7A7066', marginBottom: '5px' }}>Property address</label>
             <input value={address} onChange={e => setAddress(e.target.value)} placeholder="47 Lakeview Drive, Austin TX 78732" style={{ width: '100%', background: '#F8F4EE', border: '1px solid #DDD6C8', borderRadius: '8px', padding: '9px 12px', fontSize: '13px', color: '#141210', outline: 'none' }} />
           </div>
 
-          {/* BEDS BATHS SQFT */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '12px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '10px', fontWeight: '600', letterSpacing: '0.07em', textTransform: 'uppercase', color: '#7A7066', marginBottom: '5px' }}>Beds</label>
@@ -186,25 +183,40 @@ setOutput(cleaned);
             </div>
           </div>
 
-          {/* PRICE */}
           <div style={{ marginBottom: '12px' }}>
             <label style={{ display: 'block', fontSize: '10px', fontWeight: '600', letterSpacing: '0.07em', textTransform: 'uppercase', color: '#7A7066', marginBottom: '5px' }}>List price</label>
             <input value={price} onChange={e => setPrice(e.target.value)} placeholder="$875,000" style={{ width: '100%', background: '#F8F4EE', border: '1px solid #DDD6C8', borderRadius: '8px', padding: '9px 12px', fontSize: '13px', color: '#141210', outline: 'none' }} />
           </div>
 
-          {/* FEATURES */}
           <div style={{ marginBottom: '12px' }}>
             <label style={{ display: 'block', fontSize: '10px', fontWeight: '600', letterSpacing: '0.07em', textTransform: 'uppercase', color: '#7A7066', marginBottom: '5px' }}>Key features</label>
             <textarea value={features} onChange={e => setFeatures(e.target.value)} placeholder="Pool, lake views, chef's kitchen..." rows={3} style={{ width: '100%', background: '#F8F4EE', border: '1px solid #DDD6C8', borderRadius: '8px', padding: '9px 12px', fontSize: '13px', color: '#141210', outline: 'none', resize: 'vertical' }} />
           </div>
 
-          {/* OPEN HOUSE */}
           <div style={{ marginBottom: '12px' }}>
             <label style={{ display: 'block', fontSize: '10px', fontWeight: '600', letterSpacing: '0.07em', textTransform: 'uppercase', color: '#7A7066', marginBottom: '5px' }}>Open house (optional)</label>
             <input value={openhouse} onChange={e => setOpenhouse(e.target.value)} placeholder="Saturday, April 5 · 1–4 PM" style={{ width: '100%', background: '#F8F4EE', border: '1px solid #DDD6C8', borderRadius: '8px', padding: '9px 12px', fontSize: '13px', color: '#141210', outline: 'none' }} />
           </div>
 
-          {/* TONE */}
+          <div style={{ marginBottom: '12px' }}>
+            <label style={{ display: 'block', fontSize: '10px', fontWeight: '600', letterSpacing: '0.07em', textTransform: 'uppercase', color: '#7A7066', marginBottom: '5px' }}>Photos (optional — up to 5)</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={e => {
+                const files = Array.from(e.target.files || []).slice(0, 5);
+                setPhotos(files);
+              }}
+              style={{ width: '100%', background: '#F8F4EE', border: '1px solid #DDD6C8', borderRadius: '8px', padding: '9px 12px', fontSize: '13px', color: '#141210', outline: 'none' }}
+            />
+            {photos.length > 0 && (
+              <div style={{ fontSize: '11px', color: '#1D9E75', marginTop: '4px' }}>
+                ✓ {photos.length} photo{photos.length > 1 ? 's' : ''} selected
+              </div>
+            )}
+          </div>
+
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', fontSize: '10px', fontWeight: '600', letterSpacing: '0.07em', textTransform: 'uppercase', color: '#7A7066', marginBottom: '8px' }}>Brand tone</label>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -214,13 +226,11 @@ setOutput(cleaned);
             </div>
           </div>
 
-          {/* GENERATE BUTTON */}
           <button onClick={generate} disabled={loading} style={{ width: '100%', background: loading ? '#888' : '#141210', color: 'white', border: 'none', borderRadius: '10px', padding: '14px', fontFamily: 'Georgia, serif', fontSize: '18px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer' }}>
             {loading ? 'Generating…' : 'Generate content kit →'}
           </button>
         </div>
 
-        {/* RIGHT PANEL */}
         <div style={{ padding: '24px', overflowY: 'auto' }}>
           {!generated ? (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#7A7066', textAlign: 'center', padding: '60px' }}>
@@ -230,7 +240,6 @@ setOutput(cleaned);
             </div>
           ) : (
             <div>
-              {/* TABS */}
               <div style={{ display: 'flex', borderBottom: '1px solid #DDD6C8', marginBottom: '20px', overflowX: 'auto' }}>
                 {tabs.map(t => (
                   <div key={t.key} onClick={() => setActiveTab(t.key)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', cursor: 'pointer', color: activeTab === t.key ? '#141210' : '#7A7066', borderBottom: activeTab === t.key ? '2px solid #C49535' : '2px solid transparent', marginBottom: '-1px', whiteSpace: 'nowrap', fontSize: '12px', fontWeight: '500' }}>
@@ -239,8 +248,6 @@ setOutput(cleaned);
                   </div>
                 ))}
               </div>
-
-              {/* CONTENT */}
               <div style={{ background: 'white', border: '1px solid #DDD6C8', borderRadius: '14px', padding: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                   <span style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '0.07em', textTransform: 'uppercase', color: '#7A7066' }}>

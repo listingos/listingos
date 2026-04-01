@@ -1,10 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { currentUser } from '@clerk/nextjs/server';
 
 export async function POST(req: Request) {
-  const { prompt } = await req.json();
-
   const user = await currentUser();
   if (!user) {
     return Response.json({ error: 'not_logged_in' }, { status: 401 });
@@ -17,19 +15,16 @@ export async function POST(req: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // Get user from database
   const { data: dbUser } = await supabase
     .from('users')
     .select('*')
     .eq('email', email)
     .single();
 
-  // Check if user has a subscription
   if (!dbUser || dbUser.listings_limit === 0) {
     return Response.json({ error: 'no_subscription' }, { status: 403 });
   }
 
-  // Reset monthly usage if needed
   if (new Date() > new Date(dbUser.usage_reset_at)) {
     await supabase.from('users').update({
       usage_count: 0,
@@ -38,7 +33,6 @@ export async function POST(req: Request) {
     dbUser.usage_count = 0;
   }
 
-  // Check if user has hit their limit
   if (dbUser.listings_limit !== -1 && dbUser.usage_count >= dbUser.listings_limit) {
     return Response.json({
       error: 'limit_reached',
@@ -48,18 +42,40 @@ export async function POST(req: Request) {
     }, { status: 403 });
   }
 
-  // Increment usage count
   await supabase.from('users')
     .update({ usage_count: dbUser.usage_count + 1 })
     .eq('email', email);
 
-  // Call Claude
+  const formData = await req.formData();
+  const prompt = formData.get('prompt') as string;
+  const photos = formData.getAll('photos') as File[];
+
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+  const allowedPhotos = photos.slice(0, dbUser.photo_limit ?? 0);
+
+  const imageParts = await Promise.all(
+    allowedPhotos.map(async (photo) => {
+      const buf = Buffer.from(await photo.arrayBuffer());
+      return {
+        type: 'image' as const,
+        source: {
+          type: 'base64' as const,
+          media_type: 'image/jpeg' as const,
+          data: buf.toString('base64')
+        }
+      };
+    })
+  );
+
+  const content = imageParts.length > 0
+    ? [...imageParts, { type: 'text' as const, text: prompt }]
+    : [{ type: 'text' as const, text: prompt }];
 
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 2000,
-    messages: [{ role: 'user', content: prompt }],
+    messages: [{ role: 'user', content }],
   });
 
   let fullText = '';
