@@ -42,10 +42,6 @@ export async function POST(req: Request) {
     }, { status: 403 });
   }
 
-  await supabase.from('users')
-    .update({ usage_count: dbUser.usage_count + 1 })
-    .eq('email', email);
-
   const formData = await req.formData();
   const prompt = formData.get('prompt') as string;
   const photos = formData.getAll('photos') as File[];
@@ -72,16 +68,25 @@ export async function POST(req: Request) {
     ? [...imageParts, { type: 'text' as const, text: prompt }]
     : [{ type: 'text' as const, text: prompt }];
 
-  const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 2000,
-    messages: [{ role: 'user', content }],
-  });
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      messages: [{ role: 'user', content }],
+    });
 
-  let fullText = '';
-  if (message.content[0].type === 'text') {
-    fullText = message.content[0].text;
+    let fullText = '';
+    if (message.content[0].type === 'text') {
+      fullText = message.content[0].text;
+    }
+
+    // Only increment after successful generation
+    await supabase.from('users')
+      .update({ usage_count: dbUser.usage_count + 1 })
+      .eq('email', email);
+
+    return Response.json({ text: fullText });
+  } catch (err) {
+    return Response.json({ error: 'generation_failed' }, { status: 500 });
   }
-
-  return Response.json({ text: fullText });
 }
