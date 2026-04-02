@@ -158,7 +158,7 @@ NEIGHBORHOOD:
         </div>
       </nav>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', minHeight: 'calc(100vh - 58px)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', minHeight: 'calc(100vh - 58px)' }}>
         <div style={{ background: 'white', borderRight: '1px solid #DDD6C8', padding: '24px', overflowY: 'auto' }}>
           <div style={{ fontSize: '16px', fontWeight: '600', fontFamily: 'Georgia, serif', marginBottom: '20px' }}>New listing</div>
 
